@@ -190,16 +190,12 @@ exports.applyTransaction = function (model, e) {
           price = Amount.from_json(an.fieldsPrev.TakerPays)
             .ratio_human(an.fieldsPrev.TakerGets);
           volume = Amount.from_json(an.fieldsPrev.TakerGets);
-          if (an.diffType === 'ModifiedNode') {
-            volume = volume.subtract(an.fieldsFinal.TakerGets);
-          }
+          volume = volume.subtract(an.fieldsFinal.TakerGets);
         } else if ((ticker = tickers[paysStr + ":" + getsStr])) { // BID
           price = Amount.from_json(an.fieldsPrev.TakerGets)
             .ratio_human(an.fieldsPrev.TakerPays);
           volume = Amount.from_json(an.fieldsPrev.TakerPays);
-          if (an.diffType === 'ModifiedNode') {
-            volume = volume.subtract(an.fieldsFinal.TakerPays);
-          }
+          volume = volume.subtract(an.fieldsFinal.TakerPays);
         } else return;
 
         console.log("TRADE (LIVE)", price.to_text_full(), volume.to_text_full());
