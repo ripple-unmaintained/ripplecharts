@@ -537,14 +537,10 @@ Processor.prototype.processLedger = function (ledger_index, callback)
 
           if (an.reverse) {        // ASK
             volume = Amount.from_json(an.fieldsPrev.TakerGets);
-            if (an.diffType === 'ModifiedNode') {
-              volume = volume.subtract(an.fieldsFinal.TakerGets);
-            }
+            volume = volume.subtract(an.fieldsFinal.TakerGets);
           } else { // BID
             volume = Amount.from_json(an.fieldsPrev.TakerPays);
-            if (an.diffType === 'ModifiedNode') {
-              volume = volume.subtract(an.fieldsFinal.TakerPays);
-            }
+            volume = volume.subtract(an.fieldsFinal.TakerPays);
 
             // It's confusing, but we need to invert the book price if an.reverse
             // is *false*.
