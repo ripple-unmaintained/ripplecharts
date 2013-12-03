@@ -20,8 +20,8 @@
             tbody
               tr(ng-repeat="ticker in atickers | filter:{hl:true} | orderBy:'-vol'")
                 td: a(href="market/{{ticker.sym}}/XRP", ng-bind="ticker.sym")
-                td.fin(ng-bind="ticker.last | rpamount:{rel_precision: 0, min_rel_precision: 0}")
-                td.fin(ng-bind="ticker.d30.avg * ticker.d30.vol | rpcurr:ticker.second | rpamount:{rel_precision: 0, min_rel_precision: 0}")
+                td.fin(ng-bind="ticker.last | rpamount:{rel_precision: 0, rel_min_precision: 0}")
+                td.fin(ng-bind="ticker.d30.avg * ticker.d30.vol | rpcurr:ticker.second | rpamount:{rel_precision: 0, rel_min_precision: 0}")
               tr: td(colspan="3") For more XRP markets, see&nbsp;
                 a(href="/markets") XRP markets
                 | . For cross-currency markets, see the&nbsp;

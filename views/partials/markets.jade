@@ -29,16 +29,16 @@
             th Average
         tbody: tr(ng-repeat="ticker in atickers | orderBy:'-vol'")
           td: a(href="market/{{ticker.sym}}/XRP", ng-bind="ticker.sym")
-          td.fin(ng-bind="ticker.last | rpamount:{rel_precision: 0, min_rel_precision: 0}")
+          td.fin(ng-bind="ticker.last | rpamount:{rel_precision: 0, rel_min_precision: 0}")
           td.fin(ng-bind="ticker.caps.toFixed(2)")
           td.fin
-            span(ng-bind="ticker.d30.avg * ticker.d30.vol | rpcurr:ticker.second | rpamount:{rel_precision: 0, min_rel_precision: 0}")
+            span(ng-bind="ticker.d30.avg * ticker.d30.vol | rpcurr:ticker.second | rpamount:{rel_precision: 0, rel_min_precision: 0}")
             br
             span.minor(ng-bind="ticker.d30.vol | rpcurr:ticker.first | rpamount:{rel_precision: 0, min_rel_precision: 0}")
             span.minor &nbsp;
             span.minor(ng-bind="ticker.first.slice(0,3)")
-          td.fin(ng-bind="ticker.d30.avg | rpcurr:ticker.second | rpamount:{rel_precision: 2, min_rel_precision: 2}")
-          td.fin(ng-bind="ticker.d30.lo | rpcurr:ticker.second | rpamount:{rel_precision: 0, min_rel_precision: 0}")
-          td.fin(ng-bind="ticker.d30.hi | rpcurr:ticker.second | rpamount:{rel_precision: 0, min_rel_precision: 0}")
-          td.fin(ng-bind="ticker.d1.vol | rpcurr:ticker.first | rpamount:{rel_precision: 0, min_rel_precision: 0}")
-          td.fin(ng-bind="ticker.d1.avg | rpcurr:ticker.second | rpamount:{rel_precision: 2, min_rel_precision: 2}")
+          td.fin(ng-bind="ticker.d30.avg | rpcurr:ticker.second | rpamount:{rel_precision: 2, rel_min_precision: 2}")
+          td.fin(ng-bind="ticker.d30.lo | rpcurr:ticker.second | rpamount:{rel_precision: 0, rel_min_precision: 0}")
+          td.fin(ng-bind="ticker.d30.hi | rpcurr:ticker.second | rpamount:{rel_precision: 0, rel_min_precision: 0}")
+          td.fin(ng-bind="ticker.d1.vol | rpcurr:ticker.first | rpamount:{rel_precision: 0, rel_min_precision: 0}")
+          td.fin(ng-bind="ticker.d1.avg | rpcurr:ticker.second | rpamount:{rel_precision: 2, rel_min_precision: 2}")
