@@ -1,0 +1,21 @@
+driver_plugin: vagrant
+driver_config:
+  require_chef_omnibus: true
+  customize:
+    memory: 512
+
+platforms:
+- name: ubuntu-12.04
+  driver_config:
+    box: opscode-ubuntu-12.04
+    box_url: https://opscode-vm-bento.s3.amazonaws.com/vagrant/opscode_ubuntu-12.04_provisionerless.box
+  run_list:
+  - recipe[apt]
+# #The following is used to test the cookbook's test environment setup cookbook. We use kitchen verify.
+  - recipe[minitest-handler]
+
+suites:
+- name: ripple-ripplecharts-api
+  run_list:
+  - recipe[ripple-ripplecharts::api]
+  - recipe[ripple-ripplecharts-test] # set up test environment for verification

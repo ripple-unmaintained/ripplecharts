@@ -1,0 +1,13 @@
+site :opscode
+
+metadata
+
+cookbook 'application_nodejs', git: 'https://github.com/ripple/cookbook-application_nodejs.git', branch: 'develop'
+
+group :integration do
+
+  cookbook 'apt'
+  cookbook 'ripple-ripplecharts-test', path: './test/cookbooks/ripple-ripplecharts-test'
+  cookbook 'minitest-handler' # for testing the test cookbook only
+
+end
