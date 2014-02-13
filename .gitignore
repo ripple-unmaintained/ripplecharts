@@ -1,10 +1,6 @@
-node_modules
+*node_modules*
+/db/spreadsheets/
+*.log
+*config.*
+*.DS_Store
 
-config.js
-
-ssl/*
-!ssl/README.md
-
-s3.json
-
-/build
