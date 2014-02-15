@@ -33,30 +33,42 @@ function( doc ) {
           return;
         }
 
-        currency = node.NewFields.Balance.currency;
+        currency  = node.NewFields.Balance.currency;
         highParty = node.NewFields.HighLimit.issuer;
-        lowParty = node.NewFields.LowLimit.issuer;
+        lowParty  = node.NewFields.LowLimit.issuer;
 
-        prevBal = 0;
-        finalBal = parseFloat( node.NewFields.Balance.value );
+        prevBal   = 0;
+        finalBal  = parseFloat( node.NewFields.Balance.value );
         balChange = finalBal - prevBal;
-
+        if (node.PreviousFields) log(node.PreviousFields);
+        
       } else if ( node.PreviousFields && node.PreviousFields.Balance ) {
 
         // trustline balance modified
 
-        currency = node.FinalFields.Balance.currency;
-        lowParty = node.FinalFields.LowLimit.issuer;
+        currency  = node.FinalFields.Balance.currency;
+        lowParty  = node.FinalFields.LowLimit.issuer;
         highParty = node.FinalFields.HighLimit.issuer;
 
-        prevBal = parseFloat( node.PreviousFields.Balance.value );
-        finalBal = parseFloat( node.FinalFields.Balance.value );
+        prevBal   = parseFloat( node.PreviousFields.Balance.value );
+        finalBal  = parseFloat( node.FinalFields.Balance.value );
         balChange = finalBal - prevBal;
 
-      } else {
+      } else if ( node.FinalFields && node.FinalFields.Balance) {
+        
+        currency  = node.FinalFields.Balance.currency;
+        lowParty  = node.FinalFields.LowLimit.issuer;
+        highParty = node.FinalFields.HighLimit.issuer;        
 
+        prevBal   = 0;
+        finalBal  = parseFloat( node.FinalFields.Balance.value );
+        balChange = finalBal - prevBal;
+                
+      } else {
+        log("no prev, no final");
+        log(node);
         return;
-      }
+      } 
 
       emit( [ lowParty, currency ].concat( timestamp ), balChange );
       emit( [ highParty, currency ].concat( timestamp ), ( 0 - balChange ) );

@@ -378,8 +378,8 @@ function gatewayCapitalizationHandler( req, res ) {
         asyncCallbackPair(err);
         return;
       }
-      // don't do this here, this is just the CHANGES in the trust lines
-      //pair.results = trustlineRes.rows;
+
+      pair.results = trustlineRes.rows;
 
       var initialValueViewOpts = {
         startkey: [pair.address, pair.currency],
@@ -393,22 +393,9 @@ function gatewayCapitalizationHandler( req, res ) {
           return;
         }
 
-        winston.info("Initial trust line: " + util.inspect(initValRes.rows[0].value));
-    
-        pair.results = initValRes.rows;
-        
-        initValRes.rows.forEach(function(element, index, array) {
-          if (pair.results && trustlineRes.rows) {
-            winston.info("Trust line " + element.value + " adjusted by " + trustlineRes.rows[index].value);
-            pair.results[index].value = element.value + trustlineRes.rows[index].value;
-          }
-        });
-        
         var startCapitalization = 0;
-        
-        if (pair.results) {
-          winston.info("Adjusted trust line: " + util.inspect(pair.results[0].value));
-          startCapitalization = 0 - pair.results[0].value;
+        if (initValRes && initValRes.rows && initValRes.rows.length > 0) {
+          startCapitalization = 0 - initValRes.rows[0].value;
         }
 
         // Get hotwallet balances
@@ -419,11 +406,10 @@ function gatewayCapitalizationHandler( req, res ) {
 
           var hotwalletViewOpts = {
             // using pair.address here to set keys creates consistency AND reveals Bitstamp's hot wallet
-            startkey: [pair.address, pair.currency, hotwallet].concat(startTime.toArray().slice(0,6)),
-            endkey: [pair.address, pair.currency, hotwallet].concat(endTime.toArray().slice(0,6)),
-            // original implementation
-            //startkey: [pair.gateway, pair.currency, hotwallet].concat(startTime.toArray().slice(0,6)),
-            //endkey: [pair.gateway, pair.currency, hotwallet].concat(endTime.toArray().slice(0,6)),
+            //startkey: [pair.address, pair.currency, hotwallet].concat(startTime.toArray().slice(0,6)),
+            //endkey: [pair.address, pair.currency, hotwallet].concat(endTime.toArray().slice(0,6)),
+            startkey: [pair.gateway, pair.currency, hotwallet].concat(startTime.toArray().slice(0,6)),
+            endkey: [pair.gateway, pair.currency, hotwallet].concat(endTime.toArray().slice(0,6)),
             reduce: true
           };
           if (group) {
@@ -445,21 +431,15 @@ function gatewayCapitalizationHandler( req, res ) {
           // Subtract hotwallet balances from totals
           if (hotwalletResults) {
             hotwalletResults.forEach(function(hotwallet){
-
               hotwallet.rows.forEach(function(hotwalletRow){
 
-                var hotwalletBalance = hotwalletRow.value.latestBalance + hotwalletRow.value.balanceChange;
                 var pairRowIndex = _.findIndex(pair.results, function(pairRow) {
                   return pairRow.key === hotwalletRow.key;
                 });
 
                 if (pairRowIndex !== -1) {
-                  var accountBalance = pair.results[pairRowIndex].value;
-
-                  pair.results[pairRowIndex].value = pair.results[pairRowIndex].value - hotwalletBalance;
-                  console.log('subtracted ' + pair.name + '\'s hotwallet balance of ' 
-                    + hotwalletBalance + ' from account balance of ' 
-                    + accountBalance + ' for final balance of ' + pair.results[pairRowIndex].value);
+                  pair.results[pairRowIndex].value = pair.results[pairRowIndex].value - hotwalletRow.value.balanceChange;
+                  console.log('subtracted ' + pair.name + '\'s hotwallet balance of ' + hotwalletRow.value.balanceChange + ' from account balance for final balance of ' + pair.results[pairRowIndex].value);
                 }
               });
             });
@@ -691,22 +671,19 @@ function issuerCapitalizationHandler( req, res ) {
           return;
         }
 
-        winston.info("Initial trust line: " + util.inspect(initValRes.rows[0].value));
+        winston.info("Initial trust lines: " + util.inspect(initValRes.rows));
     
         pair.results = initValRes.rows;
         
         initValRes.rows.forEach(function(element, index, array) {
-          if (pair.results && trustlineRes.rows) {
-            winston.info("Trust line " + element.value + " adjusted by " + trustlineRes.rows[index].value);
+          if (pair.results && trustlineRes.rows && pair.results.length > 0 & trustlineRes.rows.length > 0) {
             pair.results[index].value = element.value + trustlineRes.rows[index].value;
           }
         });
-      
-        var startCapitalization = 0;
         
-        if (pair.results) {
-          winston.info("Adjusted trust line: " + util.inspect(pair.results[0].value));
-          startCapitalization = 0 - pair.results[0].value;
+        var startCapitalization = 0;
+        if (initValRes && initValRes.rows && initValRes.rows.length > 0) {
+          startCapitalization = 0 - initValRes.rows[0].value;
         }
 
         // Get hotwallet balances
@@ -740,7 +717,11 @@ function issuerCapitalizationHandler( req, res ) {
           if (hotwalletResults) {
             hotwalletResults.forEach(function(hotwallet){
 
+              //winston.info(util.inspect(hotwallet));
+              //winston.info(util.inspect(pair));
+
               hotwallet.rows.forEach(function(hotwalletRow){
+                winston.info("hotwalletrow: " + JSON.stringify(hotwalletRow));
 
                 var hotwalletBalance = hotwalletRow.value.latestBalance + hotwalletRow.value.balanceChange;
                 var pairRowIndex = _.findIndex(pair.results, function(pairRow) {
@@ -927,7 +908,7 @@ function exchangeRatesHandler( req, res ) {
     currencies.forEach(function(currency){
       getGatewaysForCurrency(currency).forEach(function(gateway){
         gatewayCurrencyPairs.push({
-          address: gateway.address,
+          address: gateway.account,
           currency: currency,
           name: gateway.name,
           hotwallets: getHotWalletsForGateway(gateway.name)
@@ -1510,7 +1491,7 @@ function topMarketsHandler( req, res ) {
  *    endTime: (any momentjs-readable date), // optional, defaults to 30 days ago if descending is true, now otherwise
  *    reduce: true/false, // optional, defaults to true
  *    timeIncrement: (any of the following: "all", "none", "year", "month", "day", "hour", "minute", "second") // optional, defaults to "day"
- *    
+ *    limit: optional, ignored unless reduce is false - limit the number of returned trades
  *    format: (either 'json', 'json_verbose', 'csv') // optional, defaults to 'json'
  *  }
  */
@@ -1682,9 +1663,14 @@ function offersExercisedHandler( req, res ) {
     } else {
       viewOpts.group_level = 3 + 2; // default to day
     } 
-  } else {
+    
+  } else if (viewOpts.reduce !== false) {
+    
     // TODO handle incorrect options better
     viewOpts.group = false; // default to day
+  } else if (req.body.limit && typeof req.body.limit == "number") {
+    //if reduce is true, limit the number of trades returned
+    viewOpts.limit = req.body.limit;
   }
 
   //winston.info('viewOpts:' + JSON.stringify(viewOpts));
@@ -1692,8 +1678,8 @@ function offersExercisedHandler( req, res ) {
   db.view("transactions", "offersExercised", viewOpts, function(err, couchRes){
     if (err) {
       winston.error('Error with request: ' + err);
+      res.send(500, { error: err });
       return;
-      // TODO send error messages to api querier
     }
 
     //winston.info('Got ' + couchRes.rows.length + ' rows');
@@ -2044,31 +2030,33 @@ function accountsCreatedHandler( req, res ) {
 
   // always reduce
   viewOpts.reduce = true;
-
+  var inc = req.body.timeIncrement ? req.body.timeIncrement.toLowerCase() : null;
+  
   // determine the group_level from the timeIncrement field
-  if (req.body.timeIncrement) {
-    var inc = req.body.timeIncrement.toLowerCase(),
-      levels = ['year', 'month', 'day', 'hour', 'minute', 'second'];
+  if (inc) {
+    var levels = ['year', 'month', 'day', 'hour', 'minute', 'second'];
     if (inc === 'all') {
       viewOpts.group = false;
+      
     } else if (levels.indexOf(inc)) {
       viewOpts.group_level = 1 + levels.indexOf(inc);
     } else {
       viewOpts.group_level = 1 + 2; // default to day
     }
+    
   } else {
     // TODO handle incorrect options better
     viewOpts.group_level = 1 + 2; // default to day
   }
 
-  winston.info('viewOpts: ' + JSON.stringify(viewOpts));
+  //winston.info('viewOpts: ' + JSON.stringify(viewOpts));
 
   db.view('accounts', 'accountsCreated', viewOpts, function(err, couchRes){
 
     if (err) {
       winston.error('Error with request: ' + err);
+      res.send(500, { error: err });
       return;
-      // TODO send error messages to api querier
     }
 
     //winston.info('Got ' + couchRes.rows.length + ' rows');
@@ -2080,9 +2068,58 @@ function accountsCreatedHandler( req, res ) {
         'time', 
         'accountsCreated'
       ];
+      
+   resRows.push(headerRow);   
 
-    resRows.push(headerRow);
+/*
+  
+  //get the number of accounts on the genesis ledger - 
+  //the total is 136, we dont need to check every time -
+  //just left this here to see the logic for arriving at 136
+  
+  var l     = require('../db/32570_full.json').result.ledger;
+  var genAccounts = 0;
+  for (var i=0; i<l.accountState.length; i++) {
+    var obj =  l.accountState[i]; 
+    if (obj.LedgerEntryType=="AccountRoot") genAccounts++;
+  }
 
+  console.log(genAccounts);
+  
+*/
+  
+  
+/* below is a workaround for the fact that we dont have ledger history
+   before ledger #32570 */ 
+   
+    var genTime = moment("2013/1/2"); //date of genesis ledger
+    var genAccounts = 136;
+    
+//if we are getting a total, add the genesis acounts if
+//the time range includes the genesis ledger  
+    if (inc=='all') { 
+      if (endTime.isBefore(genTime) &&
+        startTime.isAfter(genTime)) {
+
+        
+        if (couchRes.rows.length) {
+          couchRes.rows[0].value += genAccounts;
+        } else {
+          couchRes.rows.push({key:null,value:genAccounts});
+        }
+      }
+ 
+//if we are getting intervals, add the genesis accounts to the
+//first interval if it is the same date as the genesis ledger               
+    } else if (couchRes.rows.length) {
+      var index = req.body.descending === false ? 0 : couchRes.rows.length-1;
+      var time  = moment.utc(couchRes.rows[index].key);
+
+      if (time.format("YYY-MM-DD")==genTime.format("YYY-MM-DD")) {
+        couchRes.rows[index].value += genAccounts;  
+      }
+    }  
+    
     couchRes.rows.forEach(function(row){
       resRows.push([
         (row.key ? moment.utc(row.key).format(DATEFORMAT) : ''),
@@ -2127,9 +2164,9 @@ function accountsCreatedHandler( req, res ) {
       res.json(apiRes);
 
     } else {
-      // TODO handle incorrect input
-      winston.error('incorrect format: ' + req.body.format);
 
+      winston.error('incorrect format: ' + req.body.format);
+      res.send(500, 'Invalid format: '+ req.body.format);
     }
 
   });
