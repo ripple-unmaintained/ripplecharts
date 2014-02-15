@@ -8,7 +8,7 @@ var winston = require('winston'),
   ripple = require('ripple-lib'),
   app = express(),
   config = require('./apiConfig.json'),
-  db = require('nano')('http://' + config.couchdb.username + 
+  db = require('nano')(config.couchdb.protocol + '://' + config.couchdb.username + 
     ':' + config.couchdb.password + 
     '@' + config.couchdb.host + 
     ':' + config.couchdb.port + 
